@@ -134,8 +134,8 @@ class Network:
             for neuron1 in self.layers[i].neurons:
                 for neuron2 in self.layers[i + 1].neurons:
                     # have different color for each batch of lines
-                    # color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                    pygame.draw.line(screen, (0, 0, 0), (neuron1.x, neuron1.y), (neuron2.x, neuron2.y), 1)
+                    color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                    pygame.draw.line(screen, color, (neuron1.x, neuron1.y), (neuron2.x, neuron2.y), 1)
 
                     # render a text written in this font middle of the line
                     # get neuron1 and neuron2 position and calculate the middle point
@@ -152,6 +152,9 @@ class Network:
                         
                     
     def update(self):
+        self.feed_forward()
+
+    def feed_forward(self):
         #feed forward the network and update the neurons
         # multiply the weights with the input
         # add the bias
@@ -164,18 +167,19 @@ class Network:
                 # get the value of the neuron in the previous layer
                 value = 0
                 # get previous layer neurons
-                for k in range(len(self.layers[i].neurons)):
-                    if self.weights[i + 1].value is not None:
-                        value += self.layers[i].neurons[k].value * self.weights[i + 1].value
-
+                # for k in range(len(self.layers[i].neurons)):
+                    # if self.weights[i + 1].value is not None:
+                        # value += self.layers[i].neurons[k].value * self.weights[i + 1].value
+                for weight in self.weights:
+                    if weight.neuron2 == self.layers[i + 1].neurons[j]:
+                        value += weight.neuron1.value * weight.value
                 # add the bias
                 # value += self.weights[i][len(self.layers[i].neurons)][j]
                 # apply the activation function
                 value = self.activation_function(value)
                 self.layers[i + 1].neurons[j].value = value
 
-
-
+        
     def activation_function(self, value):
         # apply the activation function
         return 1 / (1 + np.exp(-value))
@@ -206,9 +210,10 @@ class Visulize:
         self.awake()
     
     def awake(self):
-        self.scene.append(Network(100, 530, 4, 15, (0, 0, 255),20, 10, 5, 3))
+        # self.scene.append(Network(100, 530, 4, 15, (0, 0, 255),20, 10, 5, 3))
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
-
+        # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
+        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
 
     def update(self):
         for i in self.scene:
