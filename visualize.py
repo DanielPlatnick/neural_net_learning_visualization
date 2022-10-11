@@ -135,19 +135,20 @@ class Network:
                 for neuron2 in self.layers[i + 1].neurons:
                     # have different color for each batch of lines
                     color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                    # color = (0,0,0)
                     pygame.draw.line(screen, color, (neuron1.x, neuron1.y), (neuron2.x, neuron2.y), 1)
 
-                    # render a text written in this font middle of the line
-                    # get neuron1 and neuron2 position and calculate the middle point
-                    # make text font and size dynamic
-                    # font size is dependent on the radius of the circle
-                    font_size = self.radius * 1.5
-                    font = pygame.font.SysFont('Comic Sans MS', int(font_size))
+        # render a text written in this font middle of the line
+        # get neuron1 and neuron2 position and calculate the middle point
+        # make text font and size dynamic
+        # font size is dependent on the radius of the circle
+        weight_font_size = self.radius*0.5
+        weight_font = pygame.font.SysFont('Comic Sans MS', int(weight_font_size))
         for weight in self.weights:
             if weight.value is not None:
-                text = font.render(str(np.round(weight.value, 2)), True, (0, 0, 0))
+                text = weight_font.render(str(np.round(weight.value, 2)), True, (0, 0, 0))
                 textRect = text.get_rect()
-                textRect.center = ((weight.neuron1.x + weight.neuron2.x) / 2, (weight.neuron1.y + weight.neuron2.y) / 2)
+                textRect.center = (((7*weight.neuron1.x) + weight.neuron2.x) / 8, ((7*weight.neuron1.y) + weight.neuron2.y) / 8)
                 screen.blit(text, textRect)
                         
                     
