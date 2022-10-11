@@ -97,7 +97,6 @@ class Network:
 
         index = 0
         for neuron in custom_neuron_each_layer:
-            self.weights.append([])
             self.num_neurons.append(neuron)
             # adjust layer y postion depedning on the number of neurons
             y = self.y - (neuron * (self.radius + 10) * 2) / 2
@@ -106,14 +105,26 @@ class Network:
             if index == 0:
                 # add weights for the input layer
                 # the input layer has no weights
-                self.weights[index].append([])
                 self.layers.append(Layer(self.x + x_step * index, y, neuron, self.radius, self.color, True, np.random.rand(neuron)))
             else:
                 # add weights for the hidden layer
                 # the input layer has no weights
-                self.weights[index].append(np.random.rand(self.num_neurons[index - 1] + 1, neuron))
                 self.layers.append(Layer(self.x + x_step * len(self.layers), y, neuron, self.radius, self.color))
+                # for i in range(neuron):
+                    # the number of weights is equal to the number of neurons in the previous layer
+                    # self.weights.append(Weight(self.layers[index - 1].neurons[i], self.layers[index].neurons[i], np.random.rand(1)[0]))
+
             index += 1
+        # for i in range(len(self.layers)):
+            # if i == 0:
+                # self.weights.append(Weight(None, None, None))
+            # else:
+                # for j in range(len(self.layers[i].neurons)):
+                    # self.weights.append(Weight(self.layers[i - 1].neurons[j], self.layers[i].neurons[j], np.random.rand(1)[0]))
+        for i in range(self.num_layers - 1):
+            for neuron1 in self.layers[i].neurons:
+                for neuron2 in self.layers[i + 1].neurons:
+                    self.weights.append(Weight(neuron1, neuron2, np.random.rand(1)[0]))
 
     def draw(self, screen):
         for layer in self.layers:
@@ -125,6 +136,20 @@ class Network:
                     # have different color for each batch of lines
                     # color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
                     pygame.draw.line(screen, (0, 0, 0), (neuron1.x, neuron1.y), (neuron2.x, neuron2.y), 1)
+
+                    # render a text written in this font middle of the line
+                    # get neuron1 and neuron2 position and calculate the middle point
+                    # make text font and size dynamic
+                    # font size is dependent on the radius of the circle
+                    font_size = self.radius * 1.5
+                    font = pygame.font.SysFont('Comic Sans MS', int(font_size))
+        for weight in self.weights:
+            if weight.value is not None:
+                text = font.render(str(np.round(weight.value, 2)), True, (0, 0, 0))
+                textRect = text.get_rect()
+                textRect.center = ((weight.neuron1.x + weight.neuron2.x) / 2, (weight.neuron1.y + weight.neuron2.y) / 2)
+                screen.blit(text, textRect)
+                        
                     
     def update(self):
         #feed forward the network and update the neurons
@@ -140,7 +165,8 @@ class Network:
                 value = 0
                 # get previous layer neurons
                 for k in range(len(self.layers[i].neurons)):
-                    value += self.layers[i].neurons[k].value * self.weights[i + 1][0][k][j]
+                    if self.weights[i + 1].value is not None:
+                        value += self.layers[i].neurons[k].value * self.weights[i + 1].value
 
                 # add the bias
                 # value += self.weights[i][len(self.layers[i].neurons)][j]
@@ -154,6 +180,23 @@ class Network:
         # apply the activation function
         return 1 / (1 + np.exp(-value))
 
+class Weight:
+    def __init__(self, neuron1, neuron2, value):
+        self.value = value
+        self.neuron1 = neuron1
+        self.neuron2 = neuron2
+
+    def draw(self, screen):
+        #draw line between two neurons
+        pygame.draw.line(screen, (0, 0, 0), (self.neuron1.x, self.neuron1.y), (self.neuron2.x, self.neuron2.y), 1)
+
+    def update(self):
+        pass
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
 class Visulize:
     def __init__(self):
         self.scene = []
@@ -163,8 +206,8 @@ class Visulize:
         self.awake()
     
     def awake(self):
-        # self.scene.append(Network(100, 530, 4, 15, (0, 0, 255),20, 10, 5, 3))
-        self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
+        self.scene.append(Network(100, 530, 4, 15, (0, 0, 255),20, 10, 5, 3))
+        # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
 
 
     def update(self):
