@@ -16,77 +16,91 @@ import numpy as np
 # get the train.csv file
 train = pd.read_csv('./train.csv')
 
-# get 4 faeutures and 1 label
-features = train.iloc[:, 1:].values
 # get 1 3 4  17 19 56 features 
 features = train.iloc[:, [1, 3, 4, 17, 19, 56]].values
 # get the label
 labels = train.iloc[:, -1].values
 
-# convert the features and labels to long tensor
-features = torch.from_numpy(features).long()
-labels = torch.from_numpy(labels).long()
+# convert the features to tensor
+features = torch.from_numpy(features).float()
+# convert the labels to tensor
+labels = torch.from_numpy(labels).float()
 
+# reshape labels to (batch_size, 1)
+labels = labels.view(-1, 1)
 
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        # add 2 hidden layers
+        self.fc1 = nn.Linear(6, 10)
+        self.fc2 = nn.Linear(10, 10)
+        self.fc3 = nn.Linear(10, 10)
+        # add output layer
+        self.fc4 = nn.Linear(10, 1)
 
+    def forward(self, x):
+        # add 2 hidden layers
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        # add output layer
+        x = self.fc4(x)
+        return x
 
-# get mnist dataset
-# mnist_trainset = datasets.MNIST(root='./data', train=True, download=True, transform=transforms.ToTensor())
-
-class Model:
-    def __init__(self, model, optimizer, train_loader):
-        self.model = model
-        self.optimizer = optimizer
-        self.train_loader = train_loader
-    def train(self, epoch):
-        train(self.model, self.train_loader, self.optimizer, epoch)
-
-# flatten the image
-def flatten_image(image):
-    return image.view(image.size(0), -1)
-
-def feed_forward():
-    # define a feed forward neural network
-    class FeedForward(nn.Module):
-        def __init__(self):
-            super(FeedForward, self).__init__()
-            self.fc1 = nn.Linear(6, 10)
-            self.fc2 = nn.Linear(10, 5)
-            self.fc3 = nn.Linear(5, 1)
-        def forward(self, x):
-            # x = x.view(-1, 6)
-            x = F.relu(self.fc1(x))
-            x = F.relu(self.fc2(x))
-            x = self.fc3(x)
-            return x
-    return FeedForward()
-
-
-# train the model
-def train(model, train_loader, optimizer, epoch):
+def train(model, device, train_loader, optimizer, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target)
+        loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % 10 == 0:
+        if batch_idx % 100 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
 
 def run():
-    # define a feed forward neural network
-    model = feed_forward()
-    # define an optimizer
+    # use cuda if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # create model
+    model = Model().to(device)
+    # create optimizer
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-    # define a train loader
-    train_loader = DataLoader(TensorDataset(features, labels), batch_size=64, shuffle=True)
-    # train the model
+    # create dataset
+    dataset = TensorDataset(features, labels)
+    # split dataset into train and test
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    # create data loader
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
+    # train model
     for epoch in range(1, 10 + 1):
-        train(model, train_loader, optimizer, epoch)
+        train(model, device, train_loader, optimizer, epoch)
+    # test model
+    # model.eval()
+    # test_loss = 0
+    # correct = 0
+    # with torch.no_grad():
+    #     for data, target in test_loader:
+    #         data, target = data.to(device), target.to(device)
+    #         output = model(data)
+    #         test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
+    #         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+    #         correct += pred.eq(target.view_as(pred)).sum().item()
 
+    # test_loss /= len(test_loader.dataset)
+    
+    # print("""
+    # Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)
+    # """.format(
+    #     test_loss, correct, len(test_loader.dataset),
+    #     100. * correct / len(test_loader.dataset)))
+    
 
 if __name__ == '__main__':
     run()
