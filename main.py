@@ -59,9 +59,9 @@ class Model(nn.Module):
 
     def forward(self, x):
         # sigmoid activation function
-        x = F.sigmoid(self.fc1(x))
-        x = F.sigmoid(self.fc2(x))
-        x = F.sigmoid(self.fc3(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
         x = self.fc4(x)
         return x
 
@@ -72,8 +72,11 @@ def train(model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.cross_entropy(output, target)
+        loss = F.mse_loss(output, target)
         loss.backward()
+
+        # clip gradient
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
         if batch_idx % 100 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -88,13 +91,13 @@ def run():
     # move model to GPU
     model.to(device)
     # create optimizer
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    optimizer = optim.SGD(model.parameters(), lr=0.0001)
     # create dataset
     dataset = TensorDataset(features, labels)
     # create data loader
     train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
     # train the model
-    for epoch in range(1, 10 + 1):
+    for epoch in range(1, 100 + 1):
         train(model, device, train_loader, optimizer, epoch)
     # save the model
     torch.save(model.state_dict(), 'model.pth')
