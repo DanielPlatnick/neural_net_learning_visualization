@@ -17,7 +17,20 @@ import numpy as np
 train = pd.read_csv('./train.csv')
 
 # get 1 3 4  17 19 56 features 
+
+
+# drop feautres with 0 values
+train = train.loc[(train!=0).any(axis=1)]
+# fill na values with 0
+train = train.fillna(0)
+
+# drop features with constant values
+train = train.loc[:, (train != train.iloc[0]).any()]
 features = train.iloc[:, [1, 3, 4, 17, 19, 56]].values
+
+
+
+
 # get the label
 labels = train.iloc[:, -1].values
 
@@ -28,6 +41,11 @@ labels = torch.from_numpy(labels).float()
 
 # reshape labels to (batch_size, 1)
 labels = labels.view(-1, 1)
+
+
+print(features)
+
+
 
 class Model(nn.Module):
     def __init__(self):
@@ -40,13 +58,13 @@ class Model(nn.Module):
         self.fc4 = nn.Linear(10, 1)
 
     def forward(self, x):
-        # add 2 hidden layers
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        # add output layer
+        # sigmoid activation function
+        x = F.sigmoid(self.fc1(x))
+        x = F.sigmoid(self.fc2(x))
+        x = F.sigmoid(self.fc3(x))
         x = self.fc4(x)
         return x
+
 
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
@@ -63,44 +81,24 @@ def train(model, device, train_loader, optimizer, epoch):
                 100. * batch_idx / len(train_loader), loss.item()))
 
 def run():
-    # use cuda if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # use GPU
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # create model
-    model = Model().to(device)
+    model = Model()
+    # move model to GPU
+    model.to(device)
     # create optimizer
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+    optimizer = optim.SGD(model.parameters(), lr=0.01)
     # create dataset
     dataset = TensorDataset(features, labels)
-    # split dataset into train and test
-    train_size = int(0.8 * len(dataset))
-    test_size = len(dataset) - train_size
-    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
     # create data loader
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
-    # train model
+    train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
+    # train the model
     for epoch in range(1, 10 + 1):
         train(model, device, train_loader, optimizer, epoch)
-    # test model
-    # model.eval()
-    # test_loss = 0
-    # correct = 0
-    # with torch.no_grad():
-    #     for data, target in test_loader:
-    #         data, target = data.to(device), target.to(device)
-    #         output = model(data)
-    #         test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
-    #         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-    #         correct += pred.eq(target.view_as(pred)).sum().item()
-
-    # test_loss /= len(test_loader.dataset)
-    
-    # print("""
-    # Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)
-    # """.format(
-    #     test_loss, correct, len(test_loader.dataset),
-    #     100. * correct / len(test_loader.dataset)))
-    
+    # save the model
+    torch.save(model.state_dict(), 'model.pth')
 
 if __name__ == '__main__':
     run()
+    pass
