@@ -43,7 +43,6 @@ labels = torch.from_numpy(labels).float()
 labels = labels.view(-1, 1)
 
 
-print(features)
 
 
 
@@ -53,16 +52,14 @@ class Model(nn.Module):
         # add 2 hidden layers
         self.fc1 = nn.Linear(6, 10)
         self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 10)
         # add output layer
-        self.fc4 = nn.Linear(10, 1)
+        self.fc3 = nn.Linear(10, 1)
 
     def forward(self, x):
         # sigmoid activation function
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = self.fc3(x)
         return x
 
 
@@ -95,9 +92,9 @@ def run():
     # create dataset
     dataset = TensorDataset(features, labels)
     # create data loader
-    train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
+    train_loader = DataLoader(dataset, batch_size=1, shuffle=True)
     # train the model
-    for epoch in range(1, 100 + 1):
+    for epoch in range(1, 10 + 1):
         train(model, device, train_loader, optimizer, epoch)
     # save the model
     torch.save(model.state_dict(), 'model.pth')

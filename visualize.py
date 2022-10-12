@@ -8,6 +8,8 @@ import numpy as np
 from pygame.locals import *
 from pygame.color import Color
 
+from main import Model, train, torch, optim, TensorDataset, features, labels, DataLoader
+
 # activate the pygame library .
 # initiate pygame and give permission
 # to use pygame's functionality.
@@ -105,7 +107,9 @@ class Network:
             if index == 0:
                 # add weights for the input layer
                 # the input layer has no weights
-                self.layers.append(Layer(self.x + x_step * index, y, neuron, self.radius, self.color, True, np.random.rand(neuron)))
+                # flatten features
+                features_flatten = features.view(features.shape[0], -1)
+                self.layers.append(Layer(self.x, y, neuron, self.radius, self.color, isinput=True, value=features_flatten.tolist()[0]))
             else:
                 # add weights for the hidden layer
                 # the input layer has no weights
@@ -154,6 +158,49 @@ class Network:
                     
     def update(self):
         self.feed_forward()
+        self.train()
+
+    def train(self):
+        # use GPU
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # create model
+        model = Model()
+        # move model to GPU
+        model.to(device)
+        # create optimizer
+        optimizer = optim.SGD(model.parameters(), lr=0.0001)
+        # create dataset
+        dataset = TensorDataset(features, labels)
+        # create data loader
+        train_loader = DataLoader(dataset, batch_size=1, shuffle=True)
+        # train the model
+
+        index = 0 
+        for i in range(len(model.fc1.weight.tolist())):
+            for j , w in enumerate(model.fc1.weight.tolist()[i]):
+                # update the weights given the model
+                self.weights[index].value = w
+                index += 1
+        for i in range(len(model.fc2.weight.tolist())):
+            for j , w in enumerate(model.fc2.weight.tolist()[i]):
+                # update the weights given the model
+                self.weights[index].value = w
+                index += 1
+        for i in range(len(model.fc3.weight.tolist())):
+            for j , w in enumerate(model.fc3.weight.tolist()[i]):
+                # update the weights given the model
+                self.weights[index].value = w
+                index += 1
+        
+        # for i in range(len(model.fc4.weight.tolist())):
+            # for j , w in enumerate(model.fc4.weight.tolist()[i]):
+                # update the weights given the model
+                # self.weights[index].value = w
+                # index += 1
+
+        for epoch in range(1, 2):
+            # get the weights and update from the model
+            train(model, device, train_loader, optimizer, epoch)
 
     def feed_forward(self):
         #feed forward the network and update the neurons
@@ -183,7 +230,11 @@ class Network:
         
     def activation_function(self, value):
         # apply the activation function
-        return 1 / (1 + np.exp(-value))
+        # relu function
+        if value > 0:
+            return value
+        else:
+            return 0
 
 class Weight:
     def __init__(self, neuron1, neuron2, value):
@@ -214,7 +265,8 @@ class Visulize:
         # self.scene.append(Network(100, 530, 4, 15, (0, 0, 255),20, 10, 5, 3))
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
         # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
-        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
+        # self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
+        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),6, 10, 10, 1))
 
     def update(self):
         for i in self.scene:
