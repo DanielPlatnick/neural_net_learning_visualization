@@ -158,7 +158,7 @@ class Network:
                     
     def update(self):
         self.feed_forward()
-        self.train()
+        # self.train()
 
     def train(self):
         # use GPU

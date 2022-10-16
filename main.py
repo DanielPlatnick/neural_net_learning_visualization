@@ -50,8 +50,8 @@ class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
         # add 2 hidden layers
-        self.fc1 = nn.Linear(6, 10)
-        self.fc2 = nn.Linear(10, 10)
+        self.fc1 = nn.Linear(6, 100)
+        self.fc2 = nn.Linear(100, 10)
         # add output layer
         self.fc3 = nn.Linear(10, 1)
 
@@ -71,7 +71,6 @@ def train(model, device, train_loader, optimizer, epoch):
         output = model(data)
         loss = F.mse_loss(output, target)
         loss.backward()
-
         # clip gradient
         torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
@@ -88,7 +87,7 @@ def run():
     # move model to GPU
     model.to(device)
     # create optimizer
-    optimizer = optim.SGD(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     # create dataset
     dataset = TensorDataset(features, labels)
     # create data loader
