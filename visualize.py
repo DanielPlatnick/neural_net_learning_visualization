@@ -4,7 +4,7 @@ import sys
 import time
 import random
 import math
-import numpy as np
+from utils import *
 from pygame.locals import *
 from pygame.color import Color
 
@@ -84,7 +84,7 @@ class Network:
     Customize number of layers and neurons
     """
     
-    def __init__(self, x, y, num_layers, radius, color,*custom_neuron_each_layer):
+    def __init__(self, x, y, num_layers, radius, color, chain:Chain, *custom_neuron_each_layer):
         self.x = x
         self.y = y
         self.num_layers = num_layers
@@ -92,6 +92,7 @@ class Network:
         self.color = color
         self.layers = []
         self.weights = []
+        self.chain = chain
         x_margin = 10
         # add x_margin to the radius to make sure the neurons don't overlap
         x_step = (self.radius + x_margin) * 10
@@ -157,75 +158,47 @@ class Network:
                         
                     
     def update(self):
-        self.feed_forward()
-        # self.train()
+        self.train()
 
     def train(self):
-        # use GPU
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # create model
-        model = Model()
-        # move model to GPU
-        model.to(device)
-        # create optimizer
-        optimizer = optim.SGD(model.parameters(), lr=0.0001)
-        # create dataset
-        dataset = TensorDataset(features, labels)
-        # create data loader
-        train_loader = DataLoader(dataset, batch_size=1, shuffle=True)
-        # train the model
-
-        index = 0 
-        for i in range(len(model.fc1.weight.tolist())):
-            for j , w in enumerate(model.fc1.weight.tolist()[i]):
-                # update the weights given the model
-                self.weights[index].value = w
-                index += 1
-        for i in range(len(model.fc2.weight.tolist())):
-            for j , w in enumerate(model.fc2.weight.tolist()[i]):
-                # update the weights given the model
-                self.weights[index].value = w
-                index += 1
-        for i in range(len(model.fc3.weight.tolist())):
-            for j , w in enumerate(model.fc3.weight.tolist()[i]):
-                # update the weights given the model
-                self.weights[index].value = w
-                index += 1
-        
-        # for i in range(len(model.fc4.weight.tolist())):
-            # for j , w in enumerate(model.fc4.weight.tolist()[i]):
-                # update the weights given the model
-                # self.weights[index].value = w
-                # index += 1
-
-        for epoch in range(1, 2):
-            # get the weights and update from the model
-            train(model, device, train_loader, optimizer, epoch)
-
-    def feed_forward(self):
-        #feed forward the network and update the neurons
-        # multiply the weights with the input
-        # add the bias
-        # apply the activation function
-        # update the value of the neuron
-        # simulate the network
-        # show the updated value of the neuron every 0.5 seconds
-        for i in range(self.num_layers - 1):
-            for j in range(len(self.layers[i + 1].neurons)):
-                # get the value of the neuron in the previous layer
-                value = 0
-                # get previous layer neurons
-                # for k in range(len(self.layers[i].neurons)):
-                    # if self.weights[i + 1].value is not None:
-                        # value += self.layers[i].neurons[k].value * self.weights[i + 1].value
-                for weight in self.weights:
-                    if weight.neuron2 == self.layers[i + 1].neurons[j]:
-                        value += weight.neuron1.value * weight.value
-                # add the bias
-                # value += self.weights[i][len(self.layers[i].neurons)][j]
-                # apply the activation function
-                value = self.activation_function(value)
-                self.layers[i + 1].neurons[j].value = value
+        for l in range(len(self.layers)):
+            if l == 0:
+                # get the input layer
+                layer = self.layers[l]
+                # get the input layer neurons
+                for neuron in layer.neurons:
+                    x = np.array(neuron.value)
+                    # get the weights of the neuron
+                    for w in self.weights:
+                        if w.neuron2 == neuron:
+                            # get the input value
+                            weight = np.array(w.value)
+                            # get the bias of the neuron
+                            bias = np.array(w.bias)
+                            w.value, w.bias, loss, x = train_linear_regression(np.array(x), np.array(max(labels.tolist())), np.array(weight), np.array(bias), self.chain, epochs=1)
+                    if x.shape == (1,1):
+                        neuron.value = x[0, 0]
+                    else:
+                        neuron.value = x
+            else:
+                # get the hidden layer
+                layer = self.layers[l]
+                # get the hidden layer neurons
+                for neuron in layer.neurons:
+                    x = np.array(neuron.value)
+                    # get the weights of the neuron
+                    for w in self.weights:
+                        if w.neuron2 == neuron:
+                            # get the input value
+                            weight = np.array(w.value)
+                            # get the bias of the neuron
+                            bias = np.array(w.bias)
+                            w.value, w.bias, loss, x = train_linear_regression(np.array(x), np.array(max(labels.tolist())), np.array(weight), np.array(bias), self.chain, epochs=1)
+                    if x.shape == (1,1):
+                        neuron.value = x[0, 0]
+                    else:
+                        neuron.value = x
+        print("Loss ", loss)
 
         
     def activation_function(self, value):
@@ -241,6 +214,7 @@ class Weight:
         self.value = value
         self.neuron1 = neuron1
         self.neuron2 = neuron2
+        self.bias = 0.001
 
     def draw(self, screen):
         #draw line between two neurons
@@ -266,7 +240,7 @@ class Visulize:
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
         # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
         # self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
-        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),6, 10, 10, 1))
+        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255), [sigmoid, relu], 6, 10, 10, 1))
 
     def update(self):
         for i in self.scene:
