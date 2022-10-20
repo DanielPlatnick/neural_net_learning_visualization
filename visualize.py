@@ -1,4 +1,5 @@
 # import pygame module in this program
+from hashlib import new
 import pygame
 import sys
 import time
@@ -161,44 +162,152 @@ class Network:
         self.train()
 
     def train(self):
-        for l in range(len(self.layers)):
-            if l == 0:
-                # get the input layer
-                layer = self.layers[l]
-                # get the input layer neurons
-                for neuron in layer.neurons:
-                    x = np.array(neuron.value)
-                    # get the weights of the neuron
-                    for w in self.weights:
-                        if w.neuron2 == neuron:
-                            # get the input value
-                            weight = np.array(w.value)
-                            # get the bias of the neuron
-                            bias = np.array(w.bias)
-                            w.value, w.bias, loss, x = train_linear_regression(np.array(x), np.array(max(labels.tolist())), np.array(weight), np.array(bias), self.chain, epochs=1)
-                    if x.shape == (1,1):
-                        neuron.value = x[0, 0]
-                    else:
-                        neuron.value = x
-            else:
-                # get the hidden layer
-                layer = self.layers[l]
-                # get the hidden layer neurons
-                for neuron in layer.neurons:
-                    x = np.array(neuron.value)
-                    # get the weights of the neuron
-                    for w in self.weights:
-                        if w.neuron2 == neuron:
-                            # get the input value
-                            weight = np.array(w.value)
-                            # get the bias of the neuron
-                            bias = np.array(w.bias)
-                            w.value, w.bias, loss, x = train_linear_regression(np.array(x), np.array(max(labels.tolist())), np.array(weight), np.array(bias), self.chain, epochs=1)
-                    if x.shape == (1,1):
-                        neuron.value = x[0, 0]
-                    else:
-                        neuron.value = x
-        print("Loss ", loss)
+        # get the input neurons
+        input_neurons = self.layers[0].neurons
+        # feed forward
+        hidden_layer_1 = self.layers[1].neurons
+        hidden_layer_2 = self.layers[2].neurons
+        output_layer = self.layers[3].neurons
+        
+        weights1 = []
+        bias1 = []
+
+        # get the weights
+        for i in range(len(input_neurons) * len(hidden_layer_1)):
+            # get the weight
+            weights1.append(self.weights[i].value)
+            # get the bias
+            bias1.append(self.weights[i].value)
+        # reshape the weights
+        weights1 = np.array(weights1).reshape(len(input_neurons), len(hidden_layer_1))
+        # reshape the bias
+        bias1 = np.array(bias1).reshape(len(input_neurons), len(hidden_layer_1))
+
+        # get input_neurons as numpy array
+        neurons1 = np.array([neuron.value for neuron in input_neurons])
+
+        output1  = self.chain[0](np.dot(neurons1, weights1) + bias1)
+        
+        # flatten the output
+        output1 = output1.flatten()
+        # update the value of the neurons
+        for i in range(len(hidden_layer_1)):
+            hidden_layer_1[i].value = output1[i]
+
+        weights2 = []
+        bias2 = []
+        # get the weights
+        for i in range(len(hidden_layer_1) * len(hidden_layer_2)):
+            # get the weight
+            weights2.append(self.weights[i + len(input_neurons) * len(hidden_layer_1)].value)
+            # get the bias
+            bias2.append(self.weights[i + len(input_neurons) * len(hidden_layer_1)].value)
+
+        # reshape the weights
+        weights2 = np.array(weights2).reshape(len(hidden_layer_1), len(hidden_layer_2))
+        # reshape the bias
+        bias2 = np.array(bias2).reshape(len(hidden_layer_1), len(hidden_layer_2))
+
+        # get input_neurons as numpy array
+        neurons2 = np.array([neuron.value for neuron in hidden_layer_1])
+
+        output2  = self.chain[1](np.dot(neurons2, weights2) + bias2)
+
+        # flatten the output
+        output2 = output2.flatten()
+        # update the value of the neurons
+        for i in range(len(hidden_layer_2)):
+            hidden_layer_2[i].value = output2[i]
+
+        weights3 = []
+        bias3 = []
+        # get the weights
+        for i in range(len(hidden_layer_2) * len(output_layer)):
+            # get the weight
+            weights3.append(self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value)
+            # get the bias
+            bias3.append(self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value)
+        
+        # reshape the weights
+        weights3 = np.array(weights3).reshape(len(hidden_layer_2), len(output_layer))
+        # reshape the bias
+        bias3 = np.array(bias3).reshape(len(hidden_layer_2), len(output_layer))
+
+        # get input_neurons as numpy array
+        neurons3 = np.array([neuron.value for neuron in hidden_layer_2])
+
+        output3  = self.chain[2](np.dot(neurons3, weights3) + bias3)
+
+        # flatten the output
+        output3 = output3.flatten()
+
+        # update the value of the neurons
+        for i in range(len(output_layer)):
+            output_layer[i].value = output3[i]
+
+        # backpropagation
+        # calculate the error
+        # get the output neurons
+        output_neurons = self.layers[-1].neurons
+        # get the target
+        target = 30
+        learning_rate = 0.1
+        # calculate the error
+        error = target - output_neurons[0].value
+        # calculate the derivative of the error
+        d_error = error * chain_deriv([self.chain[-1]], output_neurons[0].value)
+        # calculate the derivative of the output
+        d_output = chain_deriv([self.chain[-1]], output_neurons[0].value)
+        # calculate the derivative of the weights
+        d_weights = np.dot(neurons3.T, d_error * d_output)
+        # calculate the derivative of the bias
+        d_bias = d_error * d_output
+        # update the weights
+        for i in range(len(hidden_layer_2) * len(output_layer)):
+            self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value -= learning_rate * d_weights[i]
+
+        # update the bias
+        for i in range(len(output_layer)):
+            self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].bias -= learning_rate * d_bias
+
+        # calculate the derivative of the error
+        d_error = np.dot(d_error * d_output, weights3.T)
+        # calculate the derivative of the output
+        d_output = deriv(self.chain[-2], neurons3)
+        # calculate the derivative of the weights
+        d_weights = np.dot(np.reshape(neurons2, (10, -1)), d_error * d_output)
+        # calculate the derivative of the bias
+        d_bias = d_error * d_output
+
+        # flatten the d_weights
+        d_weights = d_weights.flatten()
+        # update the weights
+        for i in range(len(hidden_layer_1) * len(hidden_layer_2)):
+            self.weights[i + len(input_neurons) * len(hidden_layer_1)].value -= learning_rate * d_weights[i]
+
+        # update the bias
+        for i in range(len(hidden_layer_2)):
+            self.weights[i + len(input_neurons) * len(hidden_layer_1)].bias -= learning_rate * d_bias
+
+        # calculate the derivative of the error
+        d_error = np.dot(d_error * d_output, weights2.T)
+        # calculate the derivative of the output
+        d_output = deriv(self.chain[-3], neurons2)
+        # calculate the derivative of the weights
+        d_weights = np.dot(np.reshape(neurons1, (6, -1)), d_error * d_output)
+        # calculate the derivative of the bias
+        d_bias = d_error * d_output
+
+        # flatten the weights
+        d_weights = d_weights.flatten()
+        # update the weights
+        for i in range(len(input_neurons) * len(hidden_layer_1)):
+            self.weights[i].value -= learning_rate * d_weights[i]
+
+        # update the bias
+        for i in range(len(hidden_layer_1)):
+            self.weights[i].bias -= learning_rate * d_bias
+
 
         
     def activation_function(self, value):
@@ -240,7 +349,7 @@ class Visulize:
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
         # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
         # self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
-        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255), [sigmoid, relu], 6, 10, 10, 1))
+        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255), [sigmoid, relu, leacky_relu], 6, 10, 10, 1))
 
     def update(self):
         for i in self.scene:

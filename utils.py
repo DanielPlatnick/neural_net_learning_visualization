@@ -71,12 +71,12 @@ def forward_linear_regression(X: ndarray, w: ndarray, b: float, chain:Chain) -> 
     Returns:
         ndarray: The predictions.
     """
-    if len(X.shape) == 0:
-        X = X.reshape(-1, 1)
-    if len(w.shape) == 0:
-        w = w.reshape(-1, 1)
-    if len(b.shape) == 0:
-        b = b.reshape(-1, 1)
+    # if len(X.shape) == 0:
+    #     X = X.reshape(-1, 1)
+    # if len(w.shape) == 0:
+    #     w = w.reshape(-1, 1)
+    # if len(b.shape) == 0:
+    #     b = b.reshape(-1, 1)
     y_pred = X @ w + b
     # apply the function chain
     for c in chain:
@@ -98,12 +98,12 @@ def backward_linear_regression(X: ndarray, w: ndarray, b: float, y_true: ndarray
     Returns:
         Tuple[ndarray, ndarray, float]: The gradients of the weights, the gradients of the bias, and the loss.
     """
-    if len(X.shape) == 0:
-        X = X.reshape(-1, 1)
-    if len(w.shape) == 0:
-        w = w.reshape(-1, 1)
-    if len(b.shape) == 0:
-        b = b.reshape(-1, 1)
+    # if len(X.shape) == 0:
+    #     X = X.reshape(-1, 1)
+    # if len(w.shape) == 0:
+    #     w = w.reshape(-1, 1)
+    # if len(b.shape) == 0:
+    #     b = b.reshape(-1, 1)
     m = len(y_true)
     loss = rmse(y_true, y_pred)
     dw = (1 / m) * (X.T @ (y_pred - y_true))
