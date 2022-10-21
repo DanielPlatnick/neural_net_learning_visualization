@@ -9,13 +9,11 @@ from utils import *
 from pygame.locals import *
 from pygame.color import Color
 
-from main import features
-
+from main import X, y, model
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import threading
 
-tf.config.experimental.set_memory_growth(tf.config.experimental.list_physical_devices('GPU')[0], True)
 
 # activate the pygame library .
 # initiate pygame and give permission
@@ -103,6 +101,7 @@ class Network:
         self.weights = []
         self.chain = chain
         x_margin = 10
+        self.batch = 0
         # add x_margin to the radius to make sure the neurons don't overlap
         x_step = (self.radius + x_margin) * 10
         self.num_neurons = []
@@ -118,8 +117,7 @@ class Network:
                 # add weights for the input layer
                 # the input layer has no weights
                 # flatten features
-                features_flatten = features.view(features.shape[0], -1)
-                self.layers.append(Layer(self.x, y, neuron, self.radius, self.color, isinput=True, value=features_flatten.tolist()[0]))
+                self.layers.append(Layer(self.x, y, neuron, self.radius, self.color, isinput=True, value=X[0]))
             else:
                 # add weights for the hidden layer
                 # the input layer has no weights
@@ -140,17 +138,6 @@ class Network:
                 for neuron2 in self.layers[i + 1].neurons:
                     self.weights.append(Weight(neuron1, neuron2, np.random.rand(1)[0]))
         
-        self.model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(6,  input_shape=(6,1)),
-            tf.keras.layers.Dense(10),
-            tf.keras.layers.Dense(10, activation='sigmoid'),
-            tf.keras.layers.Dense(10, activation='relu'),
-            tf.keras.layers.Dense(1, activation='leaky_relu')
-        ])
-
-        # compile the model
-        self.model.compile(optimizer='adam', loss='mean_squared_error')
-
 
     def draw(self, screen):
         for layer in self.layers:
@@ -336,38 +323,31 @@ class Network:
         input_neurons = self.layers[0].neurons
         input_neurons = np.array([neuron.value for neuron in input_neurons])
 
-        
 
-        # make y_train the same as the input + 10
-        y_train = input_neurons + 10
 
         # make input neurons a 2d array
         input_neurons = np.reshape(input_neurons, (len(input_neurons), 1))
 
         # train the model
-        history = self.model.fit(input_neurons, y_train, epochs=1)
+        history = model.fit(X, y, epochs=1)
         
         losses.append(history.history['loss'][0])
 
 
         # get the weights
-        w1 = self.model.layers[1].get_weights()
-        w2 = self.model.layers[2].get_weights()
-        w3 = self.model.layers[3].get_weights()
-        w4 = self.model.layers[4].get_weights()
+        w1 = model.layers[0].get_weights()
+        w2 = model.layers[1].get_weights()
+        
 
         # flatten the weights
         w1 = w1[0].flatten()
         w2 = w2[0].flatten()
-        w3 = w3[0].flatten()
-        w4 = w4[0].flatten()
 
         
         input_neurons = self.layers[0].neurons
         # feed forward
         hidden_layer_1 = self.layers[1].neurons
-        hidden_layer_2 = self.layers[2].neurons
-        output_layer = self.layers[3].neurons
+        output_layer = self.layers[2].neurons
         
         weights1 = []
         bias1 = []
@@ -394,67 +374,49 @@ class Network:
         for i in range(len(hidden_layer_1)):
             hidden_layer_1[i].value = output1[i]
 
+        # get the weights
         weights2 = []
         bias2 = []
-        # get the weights
-        for i in range(len(hidden_layer_1) * len(hidden_layer_2)):
+        for i in range(len(hidden_layer_1) * len(output_layer)):
             # get the weight
             weights2.append(self.weights[i + len(input_neurons) * len(hidden_layer_1)].value)
             # get the bias
-            bias2.append(self.weights[i + len(input_neurons) * len(hidden_layer_1)].value)
+            bias2.append(self.weights[i + len(input_neurons) * len(hidden_layer_1)].bias)
 
         # reshape the weights
-        weights2 = np.array(weights2).reshape(len(hidden_layer_1), len(hidden_layer_2))
+        weights2 = np.array(weights2).reshape(len(hidden_layer_1), len(output_layer))
         # reshape the bias
-        bias2 = np.array(bias2).reshape(len(hidden_layer_1), len(hidden_layer_2))
+        bias2 = np.array(bias2).reshape(len(hidden_layer_1), len(output_layer))
 
-        # get input_neurons as numpy array
+        # get the output of the hidden layer
         neurons2 = np.array([neuron.value for neuron in hidden_layer_1])
 
-        output2  = self.chain[1](np.dot(neurons2, weights2) + bias2)
+        output2 = self.chain[1](np.dot(neurons2, weights2) + bias2)
 
         # flatten the output
         output2 = output2.flatten()
         # update the value of the neurons
-        for i in range(len(hidden_layer_2)):
-            hidden_layer_2[i].value = output2[i]
-
-        weights3 = []
-        bias3 = []
-        # get the weights
-        for i in range(len(hidden_layer_2) * len(output_layer)):
-            # get the weight
-            weights3.append(self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value)
-            # get the bias
-            bias3.append(self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value)
-        
-        # reshape the weights
-        weights3 = np.array(weights3).reshape(len(hidden_layer_2), len(output_layer))
-        # reshape the bias
-        bias3 = np.array(bias3).reshape(len(hidden_layer_2), len(output_layer))
-
-        # get input_neurons as numpy array
-        neurons3 = np.array([neuron.value for neuron in hidden_layer_2])
-
-        output3  = self.chain[2](np.dot(neurons3, weights3) + bias3)
-
-        # flatten the output
-        output3 = output3.flatten()
-
-        # update the value of the neurons
         for i in range(len(output_layer)):
-            output_layer[i].value = output3[i]
+            output_layer[i].value = output2[i]
         
+        #update the value of neurons
+        for i in range(len(input_neurons)):
+            input_neurons[i].value = X[self.batch][i]
+
+        #update the value of neurons hideen layer
+        for i in range(len(hidden_layer_1)):
+            hidden_layer_1[i].value = output1[i]
+
+
         # update the weights
         for i in range(len(input_neurons) * len(hidden_layer_1)):
             self.weights[i].value = w1[i]
-        
-        for i in range(len(hidden_layer_1) * len(hidden_layer_2)):
+        for i in range(len(hidden_layer_1) * len(output_layer)):
             self.weights[i + len(input_neurons) * len(hidden_layer_1)].value = w2[i]
 
-        for i in range(len(hidden_layer_2) * len(output_layer)):
-            self.weights[i + len(input_neurons) * len(hidden_layer_1) + len(hidden_layer_1) * len(hidden_layer_2)].value = w3[i]
-
+        self.batch += 1
+        if self.batch == len(X):
+            self.batch = 0
         
     def activation_function(self, value):
         # apply the activation function
@@ -495,7 +457,7 @@ class Visulize:
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
         # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
         # self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
-        self.scene.append(Network(100, 530, 4, 18, (0, 0, 255), [sigmoid, relu, leacky_relu], 6, 10, 10, 1))
+        self.scene.append(Network(100, 530, 3, 18, (0, 0, 255), [linear, relu, sigmoid], 2, 10, 1))
 
     def update(self):
         for i in self.scene:
@@ -514,12 +476,27 @@ class Visulize:
         self.quit()
 
     def quit(self):
-        plt.plot(np.arange(len(losses)),losses)
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
-        # logrithmic scale for the y-axis
-        plt.yscale('log')
+        # make a figure with 2 subplots
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        # plot the loss in the top subplot
+        ax[0].plot(np.arange(len(losses)), losses)
+        ax[0].set_xlabel('Epochs')
+        ax[0].set_ylabel('Loss')
+        ax[0].set_yscale('log')
+        # plot the x and y coordinates in the bottom subplot
+        ax[1].scatter(X[:, 0], X[:, 1], c=y, cmap='bwr')
+        # plot a decision boundary by evaluating the model on the grid
+        xx, yy = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
+        Z = model(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.numpy().reshape(xx.shape)
+        ax[1].contourf(xx, yy, Z, cmap='bwr', alpha=0.2)
+        ax[1].set_xlim(-1, 1)
+        ax[1].set_ylim(-1, 1)
+        ax[1].set_xlabel('x1')
+        ax[1].set_ylabel('x2')
 
+        # plot support vectors
+        ax[1].scatter(X[:, 0], X[:, 1], c=y, cmap='bwr')
         plt.show()
         pygame.quit()
         sys.exit()

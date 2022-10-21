@@ -171,3 +171,14 @@ def leacky_relu(x: ndarray) -> ndarray:
         ndarray: The output.
     """
     return np.maximum(0.01 * x, x)
+
+def linear(x: ndarray) -> ndarray:
+    """Compute the linear function.
+
+    Args:
+        x (ndarray): The input.
+
+    Returns:
+        ndarray: The output.
+    """
+    return x
