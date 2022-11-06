@@ -91,7 +91,7 @@ class Network:
     Customize number of layers and neurons
     """
     
-    def __init__(self, x, y, num_layers, radius, color, chain:Chain, *custom_neuron_each_layer):
+    def __init__(self, x, y, num_layers, radius, color, chain:Chain=None, activations:List[str]=None, *custom_neuron_each_layer):
         self.x = x
         self.y = y
         self.num_layers = num_layers
@@ -457,7 +457,7 @@ class Visulize:
         # self.scene.append(Network(100, 530, 3, 15, (0, 0, 255),4, 3, 2))
         # self.scene.append(Network(100, 530, 3, 2, (0, 0, 255),784, 128, 64, 10))
         # self.scene.append(Network(100, 530, 4, 18, (0, 0, 255),4, 10, 10, 1))
-        self.scene.append(Network(100, 530, 3, 18, (0, 0, 255), [linear, relu, sigmoid], 2, 10, 1))
+        self.scene.append(Network(100, 530, 3, 18, (0, 0, 255), [linear, relu, sigmoid],[], 2, 10, 1))
 
     def update(self):
         for i in self.scene:
