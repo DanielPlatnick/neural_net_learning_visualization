@@ -10,7 +10,7 @@ We use make_circles Dataset from sklearn.
 ### Description
 
 We have three main files.
-main.py, utils.py and visualyze.py
+main.py, utils.py and visualize.py
 
 #### main.py
 - Define the model
