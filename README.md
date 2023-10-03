@@ -1,7 +1,7 @@
 ## Deep Learning Project - Asignment 5 - Suren, Daniel, Mehjabin, Samad
 ## Neural Network Visualization
 
-The foundation of this repository is the visualisation of the learning process (feedforward to calculate output, error computation, backpropagation through the output to alter weights).
+The foundation of this repository is the visualization of the learning process (feedforward to calculate output, error computation, backpropagation through the output to alter weights).
 With the help of this project we can detect the error of each layer.
 ### Dataset
 
@@ -13,14 +13,13 @@ We have three main files.
 main.py, utils.py and visualize.py
 
 #### main.py
-- Define the sequential model.
+- Defines the sequential model.
 - For the two dense layers, we used Relu and Sigmoid activation functions.
-- We used "adam" for the optimization.
+- We used "adam" for optimization.
 - In this file, we generate the datasets.
 
-#### utils.py
-#### visualyze.py
-- We use pygame library for the visualizatioin.
+#### visualize.py
+- We use pygame library for the visualization.
 - We use TensorFlow.
 - We define the screen width and height to 1000.
 - For each neuron we define it's color, radius and value.
