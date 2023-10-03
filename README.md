@@ -13,8 +13,7 @@ We have three main files.
 main.py, utils.py and visualize.py
 
 #### main.py
-- Define the model
-- It's a sequential model.
+- Define the sequential model.
 - For the two dense layer, we used Relu and Sigmoid activation functions.
 - We used "adam" for the optimization.
 - In this file, we generate the datasets.
