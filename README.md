@@ -1,7 +1,7 @@
 ## Deep Learning Project - Suren, Daniel, Mehjabin, Samad
 ## Neural Network Visualization
 
-The foundation of this repository is the visualization of the learning process (feedforward to calculate output, error computation, backpropagation through the output to alter weights).
+This repository is the visualizes the learning process (feedforward to calculate output, error computation, backpropagation through the output to alter weights).
 With the help of this project we can detect the error of each layer.
 ### Dataset
 
